@@ -1,24 +1,22 @@
 # Linux X11 Selection and Copy-Paste for Windows OS
 
-**The X11 select-copy-paste workflow, implemented for Windows.**
+Select text to copy it, middle-click to paste it. The way it works on a Linux desktop, now on Windows.
 
-> Select text to copy it. Middle-click to paste it. Exactly as on a Linux desktop.
+If you spend your days switching between Linux and Windows, you know the feeling: you select a line in a
+terminal on Linux, middle-click into an editor, done. Then you try the same thing on Windows and nothing
+happens. I got tired of that, so I made Linux Selection.
 
-On X11 this is so natural that Linux users stop noticing it, until they sit at a Windows machine and the
-middle button does nothing. Linux Selection implements the X11 *select-copy-paste* model on Windows:
-selecting text copies it, and pressing the middle mouse button pastes it at the pointer. It is a single,
-dependency-free executable that installs itself as a Windows service, lives in the notification area and
-can be removed from **Settings > Apps**.
+It's a single executable with no dependencies. It installs itself as a Windows service, sits in the
+notification area, and can be removed from **Settings > Apps** like any other program.
 
 | | |
 |---|---|
-| **Version** | 1.0.1 |
-| **Platform** | Windows 10 / Windows 11 (x64 and x86) |
-| **Runtime** | .NET Framework 4.8 (built into Windows) |
-| **Dependencies** | None |
-| **Network access** | None |
-| **Author** | Aleksandr Igumenov (original idea and implementation) |
-| **License** | [Apache 2.0](LICENSE), attribution required ([NOTICE](NOTICE)) |
+| Version | 1.0.1 |
+| Works on | Windows 10 and 11, 64- and 32-bit |
+| Needs | .NET Framework 4.8, which Windows already has |
+| Network access | None |
+| Author | Aleksandr Igumenov |
+| License | [Apache 2.0](LICENSE), please credit the author ([NOTICE](NOTICE)) |
 
 ---
 
@@ -50,122 +48,104 @@ can be removed from **Settings > Apps**.
 
 ## 1. Overview
 
-### 1.1 The X11 select-copy-paste model
+### 1.1 How it works on X11
 
-The X Window System (X11) defines two independent text buffers, and most Wayland compositors keep the same
-behaviour for compatibility:
+X11 keeps two separate text buffers, and most Wayland desktops copy that behaviour:
 
-| X11 buffer | Filled by | Pasted with |
-|---|---|---|
-| **PRIMARY** selection | Simply selecting text with the mouse | **Middle mouse button**, at the pointer position |
-| **CLIPBOARD** | An explicit copy command (`Ctrl+C`) | An explicit paste command (`Ctrl+V`), at the caret |
+- the **PRIMARY selection**, which fills up as soon as you select text with the mouse and is pasted with the
+  middle button wherever the pointer is;
+- the **CLIPBOARD**, which you fill with `Ctrl+C` and paste with `Ctrl+V`.
 
-The PRIMARY selection makes copying text a single gesture: select, then middle-click where it should go.
-No keyboard is needed and the regular clipboard stays untouched.
+The first one is what makes copying on Linux feel effortless. Select, middle-click, and your regular
+clipboard isn't even touched.
 
-### 1.2 The gap on Windows
+### 1.2 What's missing on Windows
 
-Windows has only the clipboard, and the middle button has no text meaning. Users who move between Linux
-and Windows constantly reach for the middle button and find that nothing happens.
+Windows only has the clipboard. The middle button means "open in new tab" or "autoscroll", never "paste".
+There's no setting for it and no built-in way to add it.
 
-### 1.3 The solution
+### 1.3 What this program does
 
-Linux Selection implements the X11 select-copy-paste model on Windows without replacing any Windows
-component and without requiring additional software:
+Linux Selection adds that behaviour on top of Windows without replacing anything:
 
-| X11 behaviour | Linux Selection on Windows |
-|---|---|
-| Selecting text fills PRIMARY | Selecting text copies it automatically |
-| Middle-click pastes PRIMARY at the pointer | Middle-click over a text field pastes at the pointer |
-| PRIMARY and CLIPBOARD are independent | *Separate selection buffer* mode keeps `Ctrl+C`/`Ctrl+V` independent |
-| Middle-click elsewhere keeps its meaning | Links, tabs and autoscroll work as usual |
+- selecting text with the mouse copies it;
+- middle-clicking in a text field pastes it at the pointer;
+- if you want the two buffers kept apart like on X11, turn on *Separate selection buffer* and `Ctrl+C` /
+  `Ctrl+V` will keep working on their own;
+- anywhere that isn't a text field, the middle button does what it always did.
 
-### Goals
+A few rules I set for myself while writing it: if you didn't select anything, the clipboard stays as it was.
+No runtime to install, no scripting engine, no third-party libraries. And it should install and uninstall
+cleanly, like a proper Windows program.
 
-- Reproduce the X11 select-copy-paste behaviour as closely as Windows allows.
-- Never get in the way: if nothing is selected, the clipboard is not touched; outside text fields the
-  middle button keeps its normal meaning (open link in new tab, autoscroll, close tab).
-- Zero dependencies: no runtime to install, no scripting engine, no third-party libraries.
-- Professional lifecycle: proper installer, service, Start menu entries, clean uninstall.
-
-### Non-goals
-
-- Clipboard history or synchronization between devices.
-- Support for Windows versions older than Windows 10.
+What it doesn't try to do: clipboard history, syncing between computers, or support for anything older than
+Windows 10.
 
 ---
 
 ## 2. Features
 
-| Feature | Description |
-|---|---|
-| **Select to copy** | Text selected with the mouse (drag, double-click, triple-click) is copied automatically. |
-| **Middle-click paste** | Middle-click over a text field pastes at the mouse position. |
-| **Context awareness** | Acts only when the mouse pointer is the text cursor (I-beam); elsewhere the middle button works as usual. |
-| **Two buffer modes** | *Shared* (default): selection goes to the clipboard. *Separate*: X11 PRIMARY/CLIPBOARD behaviour, `Ctrl+C`/`Ctrl+V` untouched. |
-| **Application exclusions** | Terminals, remote desktop and virtual machine windows are ignored. |
-| **Windows service** | Starts at boot, supervises the tray agent in every user session, restarts it if it crashes. |
-| **Tray icon and menu** | Status colours, enable/disable, buffer mode, start/stop service, stop and exit. |
-| **Global hotkey** | `Ctrl+Alt+P` toggles the feature on and off. |
-| **Self-contained installer** | Interactive and silent modes, in-place upgrades, Start menu shortcuts. |
-| **Standard uninstall** | Listed in **Settings > Apps**; removes every trace it created. |
+- Copies on select: dragging, double-clicking a word or triple-clicking a line copies the selection.
+- Pastes on middle-click, at the mouse position, but only over text fields. Links, tabs and autoscroll
+  behave normally.
+- Two modes. By default the selection goes straight to the clipboard. In separate mode it's kept in its own
+  buffer, just like X11 PRIMARY.
+- Leaves terminals, Remote Desktop and virtual machine windows alone.
+- Runs as a Windows service, starts at boot and keeps itself running for every logged-in user.
+- Tray icon with a menu, and `Ctrl+Alt+P` to switch it on and off.
+- Its own installer, with a silent mode, Start menu shortcuts and a normal entry in *Settings > Apps*.
 
 ---
 
 ## 3. Requirements
 
-| Requirement | Notes |
-|---|---|
-| Windows 10 or Windows 11 | Server editions with Desktop Experience also work. |
-| .NET Framework 4.8 | Included in all supported Windows versions. |
-| Administrator rights | Only for installation and uninstallation. Daily use does not require them. |
-| A mouse with a middle button | Or a wheel that can be clicked. |
+Windows 10 or 11 (Server with Desktop Experience works too). .NET Framework 4.8 is part of all of these, so
+there's nothing to install. You'll need administrator rights to install and uninstall, but not for everyday
+use. And, of course, a mouse with a middle button or a clickable wheel.
 
 ---
 
 ## 4. Installation
 
-### 4.1 Interactive installation
+### 4.1 The normal way
 
 1. Download `LinuxSelectionSetup.exe` from the [latest release](../../releases/latest).
-   Optionally verify its SHA-256 checksum against the one published in the release notes:
-   `certutil -hashfile LinuxSelectionSetup.exe SHA256`
-2. Run it and click **Yes** in the confirmation dialog.
-3. Confirm the User Account Control (UAC) prompt.
+2. Run it, click **Yes**, and confirm the UAC prompt.
 
-The tray icon appears within a few seconds.
+After a few seconds a green icon appears next to the clock. That's it.
 
-> **SmartScreen warning.** The installer is not code-signed, so Windows SmartScreen may show
-> *"Windows protected your PC"*. Choose **More info > Run anyway**, or build the installer yourself
-> from the source code (see [Building from source](#14-building-from-source)).
+If you want to check the download, compare its checksum with the one in the release notes:
+`certutil -hashfile LinuxSelectionSetup.exe SHA256`
 
-### 4.2 What the installer does
+> The installer isn't code-signed, so SmartScreen may say *"Windows protected your PC"*.
+> Click **More info > Run anyway**, or build it yourself from the source (see [section 14](#14-building-from-source)).
 
-1. Stops the existing service and tray agents, if an earlier version is installed.
-2. Copies the program to `C:\Program Files\LinuxSelection\LinuxSelection.exe`.
-3. Creates or updates the `LinuxSelection` Windows service:
-   - start type **Automatic**;
-   - recovery: restart after 5 s, 5 s and 30 s, failure counter reset after 24 h;
-   - permissions that allow interactive users to start and stop it without UAC.
-4. Creates the Start menu folder **Linux Selection** with a launcher and an uninstaller.
-5. Registers the application in **Settings > Apps** (Add/Remove Programs).
-6. Starts the service, which launches the tray agent in the user session.
+### 4.2 What the installer actually does
+
+It stops any older version that's running and copies the program to
+`C:\Program Files\LinuxSelection\LinuxSelection.exe`. Then it registers the `LinuxSelection` service with
+automatic start. If the service ever crashes, Windows restarts it after 5 seconds, then 5 again, then 30.
+It also gives regular users permission to start and stop this one service, so the tray menu works without
+UAC prompts.
+
+Finally it adds a **Linux Selection** folder to the Start menu, registers the program in *Settings > Apps*
+and starts the service, which in turn starts the tray icon in your session.
 
 ### 4.3 Silent installation
 
-For scripted deployment (Group Policy, Intune, SCCM, provisioning scripts):
+For Group Policy, Intune, SCCM or your own scripts:
 
 ```cmd
 LinuxSelectionSetup.exe --install /quiet
 ```
 
-`/silent` and `/s` are accepted as synonyms of `/quiet`. Run the command from an elevated context
-to avoid the UAC prompt. Exit codes are listed in the [command-line reference](#8-command-line-reference).
+`/silent` and `/s` work too. Run it elevated if you don't want a UAC prompt. The exit codes are listed in
+[section 8](#8-command-line-reference).
 
 ### 4.4 Upgrading
 
-Run a newer `LinuxSelectionSetup.exe`. The installer detects the existing installation, shows the installed
-version and upgrades in place. User settings are preserved.
+Just run the newer installer. It notices the existing installation, tells you which version you have and
+replaces it. Your settings stay as they were.
 
 ---
 
@@ -173,105 +153,93 @@ version and upgrades in place. User settings are preserved.
 
 ### 5.1 Copy and paste
 
-| Action | Result |
+Select text with the mouse (drag, double-click a word, triple-click a line) and it's copied. Middle-click
+inside a text field and it's pasted where the pointer is. Middle-click on a link, a tab or an empty area and
+Windows does whatever it normally does.
+
+### 5.2 The tray icon
+
+The colour tells you the state at a glance: **green** means it's working, **grey** means you switched it
+off, and **red** means the service is stopped.
+
+Double-click the icon to switch it on or off. Right-click for the menu:
+
+| Menu item | What it does |
 |---|---|
-| Drag over text with the left button | Selection is copied |
-| Double-click a word / triple-click a line | Selection is copied |
-| Middle-click inside a text field | Text is pasted at the mouse position |
-| Middle-click on a link, tab or empty area | Normal Windows behaviour |
-
-### 5.2 Tray icon
-
-| Colour | Meaning |
-|---|---|
-| Green | Active |
-| Grey | Disabled with the *Enabled* checkbox or `Ctrl+Alt+P` |
-| Red | Service stopped |
-
-Double-clicking the icon toggles *Enabled*. Right-clicking opens the menu:
-
-| Menu item | Action |
-|---|---|
-| **Service: running / stopped** | Current service status (read-only). |
-| **Enabled** `Ctrl+Alt+P` | Turns the feature on or off. The service keeps running. |
-| **Separate selection buffer (Linux style)** | Switches between shared and separate buffer modes. |
-| **Start service** | Starts the Windows service. |
-| **Stop service** | Stops the Windows service. The tray icon stays so the service can be started again. |
-| **Install as service...** | Shown only when the service is not installed. |
-| **Stop and exit** | Stops the service and closes the tray agent. |
+| Service: running / stopped | Just shows the current state. |
+| Enabled (`Ctrl+Alt+P`) | Turns copy/paste on or off. The service keeps running. |
+| Separate selection buffer (Linux style) | Switches between the two modes described below. |
+| Start service / Stop service | Starts or stops the Windows service. The icon stays, so you can start it again. |
+| Install as service... | Only appears if the service isn't installed. |
+| Stop and exit | Stops the service and closes the icon. |
 
 ### 5.3 Start menu
 
-| Shortcut | Action |
-|---|---|
-| **Linux Selection** | Starts the tray agent and the service. If already running, shows a notification and starts the service if it was stopped. |
-| **Uninstall Linux Selection** | Asks for confirmation and uninstalls. |
+**Linux Selection** starts the program. If it's already running, you'll get a short notification, and if the
+service was stopped it gets started again. **Uninstall Linux Selection** asks once and then removes everything.
 
-### 5.4 Buffer modes
+### 5.4 The two modes
 
-| | Shared (default) | Separate (Linux style) |
-|---|---|---|
-| Selecting text | Replaces the clipboard | Stored in a private buffer; clipboard restored |
-| `Ctrl+V` after selecting | Pastes the selection | Pastes the previous clipboard content |
-| Middle-click | Pastes the clipboard | Pastes the private buffer |
-| X11 equivalent | PRIMARY and CLIPBOARD merged | PRIMARY and CLIPBOARD independent |
-| Best for | Users who want "copy on select" | Users who want exact X11 behaviour |
+In the default mode, selecting text simply replaces what's on the clipboard. So after selecting, both
+middle-click and `Ctrl+V` paste the selection. This is the "copy on select" behaviour most people want.
+
+In separate mode, the selection goes into its own buffer and your clipboard is put back the way it was.
+Middle-click pastes the selection, `Ctrl+V` pastes whatever you last copied with `Ctrl+C`. That's exactly how
+PRIMARY and CLIPBOARD behave on X11.
 
 ---
 
 ## 6. Configuration
 
-Settings are stored per user in the registry and are changed from the tray menu.
+Everything you can change is in the tray menu. The choices are saved per user in the registry under
+`HKCU\Software\LinuxSelection`:
 
-| Key | Value | Type | Default | Meaning |
-|---|---|---|---|---|
-| `HKCU\Software\LinuxSelection` | `Enabled` | DWORD | `1` | Feature enabled |
-| `HKCU\Software\LinuxSelection` | `Separate` | DWORD | `0` | Separate selection buffer |
+| Value | Type | Default | Meaning |
+|---|---|---|---|
+| `Enabled` | DWORD | `1` | Copy/paste switched on |
+| `Separate` | DWORD | `0` | Separate selection buffer |
 
-Compile-time settings at the top of the `TrayAgent` class in `LinuxSelection.cs`:
-
-| Setting | Default | Meaning |
-|---|---|---|
-| `Excluded` | `conhost.exe`, `WindowsTerminal.exe`, `mstsc.exe`, `VirtualBoxVM.exe`, `vmconnect.exe` | Processes where the feature is inactive |
-| `DragThreshold` | `6` px | Minimum mouse movement that counts as a selection drag |
+Two more things can be changed in the source, at the top of the `TrayAgent` class: the list of ignored
+programs (`Excluded`, by default `conhost.exe`, `WindowsTerminal.exe`, `mstsc.exe`, `VirtualBoxVM.exe` and
+`vmconnect.exe`) and how far the mouse has to move before it counts as a selection (`DragThreshold`, 6 pixels).
 
 ---
 
 ## 7. Uninstallation
 
-Any of the following removes Linux Selection completely:
+Use whichever is handy:
 
 - **Settings > Apps > Linux Selection > Uninstall**
 - **Start menu > Linux Selection > Uninstall Linux Selection**
-- Silent: `"C:\Program Files\LinuxSelection\LinuxSelection.exe" --uninstall /quiet`
+- or silently: `"C:\Program Files\LinuxSelection\LinuxSelection.exe" --uninstall /quiet`
 
-The uninstaller stops and deletes the service, closes tray agents in all sessions, and removes the
-Start menu folder, the *Apps* entry, the user settings, the program folder and the log folder.
+It stops and removes the service, closes the tray icon for every user, and deletes the Start menu folder, the
+*Apps* entry, the settings, the program folder and the log. Nothing is left behind.
 
 ---
 
 ## 8. Command-line reference
 
-The same executable provides every mode.
+The installer, the service and the tray program are all the same file, started with different arguments.
 
 | Command | Description |
 |---|---|
-| `LinuxSelectionSetup.exe` | Interactive installer (any location other than the install folder). |
-| `LinuxSelection.exe` | Tray agent (when started from the install folder). |
-| `--install [/quiet]` | Install or upgrade. Elevates itself if required. |
-| `--uninstall [/quiet] [/confirm]` | Uninstall. `/confirm` asks first (used by the Start menu shortcut). |
-| `--service` | Service entry point. Started by the Service Control Manager only. |
-| `--make-icon <file.ico>` | Writes the application icon. Used during the build. |
-| `--parent <pid>` | Internal: process that requested elevation, excluded from shutdown. |
+| `LinuxSelectionSetup.exe` | Runs the installer (when started from anywhere except the install folder). |
+| `LinuxSelection.exe` | Runs the tray program (when started from the install folder). |
+| `--install [/quiet]` | Installs or upgrades. Asks for admin rights if needed. |
+| `--uninstall [/quiet] [/confirm]` | Uninstalls. `/confirm` asks first; the Start menu shortcut uses it. |
+| `--service` | Used by Windows to start the service. Don't run it yourself. |
+| `--make-icon <file.ico>` | Writes the program icon. Only needed when building. |
+| `--parent <pid>` | Internal, used when the program restarts itself with admin rights. |
 
-| Exit code | Meaning |
+Exit codes are the same ones Windows Installer uses, so deployment tools understand them out of the box:
+
+| Code | Meaning |
 |---|---|
-| `0` | Success |
-| `1223` | UAC prompt declined (`ERROR_CANCELLED`) |
-| `1602` | Cancelled by the user (`ERROR_INSTALL_USEREXIT`) |
-| `1603` | Installation or uninstallation failed (`ERROR_INSTALL_FAILURE`) |
-
-Exit codes follow Windows Installer conventions so deployment tools interpret them correctly.
+| `0` | Done |
+| `1223` | The UAC prompt was declined |
+| `1602` | Cancelled by the user |
+| `1603` | Something went wrong (see the log) |
 
 ---
 
@@ -319,15 +287,15 @@ flowchart LR
     style S1 fill:#DCDCDC,stroke:#414141,color:#414141
 ```
 
-| Component | Runs as | Session | Responsibility |
+There are three roles, and they're all the same executable:
+
+| Part | Runs as | Session | Job |
 |---|---|---|---|
-| **Service** | LocalSystem | 0 | Starts with Windows; launches and supervises a tray agent in each active session. |
-| **Tray agent** | Logged-on user | 1..n | Mouse hook, copy and paste, clipboard, tray icon, menu, hotkey. |
-| **Installer** | Administrator (elevated) | User | Files, service registration, shortcuts, *Apps* entry, uninstall. |
+| Service | LocalSystem | 0 | Starts with Windows and keeps a tray program running in every active session. |
+| Tray program | The logged-in user | 1..n | Watches the mouse, copies and pastes, shows the icon and menu. |
+| Installer | Administrator | User | Installs, upgrades and uninstalls. |
 
-All three are the same executable started with different arguments.
-
-### 9.2 Copy flow
+### 9.2 What happens when you select text
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {
@@ -362,7 +330,7 @@ sequenceDiagram
     end
 ```
 
-### 9.3 Paste flow
+### 9.3 What happens when you middle-click
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {
@@ -394,214 +362,218 @@ sequenceDiagram
     end
 ```
 
-### 9.4 Service supervision
+### 9.4 How the service keeps things running
 
-- A timer fires every 3 seconds and enumerates sessions with `WTSEnumerateSessions`.
-- For every **active** user session without a running agent, the service obtains the user token
-  (`WTSQueryUserToken`) and starts the agent on the interactive desktop (`winsta0\default`).
-- A launch in the same session is attempted at most once every 10 seconds to avoid restart loops.
-- If the service process itself crashes, the Service Control Manager restarts it (recovery actions).
+Every 3 seconds the service looks at the active user sessions (`WTSEnumerateSessions`). If one of them has no
+tray program, it takes that user's token (`WTSQueryUserToken`) and starts the program on their desktop
+(`winsta0\default`). To avoid a restart loop, it won't try the same session more than once every 10 seconds.
+If the service itself crashes, Windows restarts it.
 
-### 9.5 Agent lifecycle
+### 9.5 The tray program's lifecycle
 
-- **Single instance per session**: a named mutex `Local\LinuxSelection_Agent`.
-- **Second launch** (e.g. from the Start menu): signals the running agent through the named event
-  `Local\LinuxSelection_Show`; the agent shows a notification and starts the service if it is stopped.
-- **Status polling**: every 2 seconds, and whenever the menu opens.
-- **Effective state**: the feature is active only when *Enabled* is checked **and** the service is running.
+Only one copy runs per session; a named mutex (`Local\LinuxSelection_Agent`) takes care of that. If you start
+it again from the Start menu, the new copy pokes the running one through a named event
+(`Local\LinuxSelection_Show`) and exits. The running one shows a notification and starts the service if it was
+stopped. The state is refreshed every 2 seconds and whenever you open the menu. Copy and paste only work when
+*Enabled* is ticked and the service is running.
 
 ---
 
 ## 10. Design decisions and rationale
 
-### 10.1 Language and runtime: C# on .NET Framework 4.8
+This is the part I'd want to read if I were looking at someone else's project: why things are the way they are.
 
-| Considered | Decision | Reason |
-|---|---|---|
-| AutoHotkey | Rejected | Requires a third-party interpreter. |
-| PowerShell | Rejected | Slow start-up, script execution policies, unsuitable for a low-latency mouse hook. |
-| C / C++ | Rejected | Needs a compiler that is not part of Windows; more code for the tray UI. |
-| .NET 6+ | Rejected | Runtime not installed by default; self-contained builds are large. |
-| **C# / .NET Framework 4.8** | **Chosen** | Runtime **and compiler** (`csc.exe`) ship with Windows. Full Win32 access through P/Invoke, WinForms for the tray. |
+### 10.1 Why C# on .NET Framework 4.8
 
-### 10.2 C# 5 language level
+I wanted something that runs on any Windows machine without installing anything, and that anyone can build
+without installing anything either. I looked at a few options:
 
-The compiler that ships with Windows (`%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe`) supports
-C# 5. The code therefore avoids newer syntax (string interpolation, expression-bodied members, `out var`,
-`nameof`). Anyone can build the project without installing Visual Studio or an SDK.
+- **AutoHotkey** was my first prototype, and it works, but it needs its own interpreter.
+- **PowerShell** starts slowly, runs into execution policies and isn't great for a mouse hook that has to
+  react instantly.
+- **C or C++** would need a compiler that Windows doesn't ship with, and the tray UI takes much more code.
+- **.NET 6 or newer** isn't installed by default, and self-contained builds are huge.
 
-### 10.3 One executable for everything
+.NET Framework 4.8 is already on every Windows 10 and 11 machine, and so is its C# compiler (`csc.exe`). That
+settled it. P/Invoke gives full access to the Win32 API, and WinForms handles the tray icon.
 
-Installer, service and tray agent are the same file. This guarantees that all parts always have the same
-version, makes the repository and the release a single artifact, and lets the installer copy itself.
+### 10.2 Why C# 5 syntax
 
-### 10.4 Service plus per-session agent
+The compiler that comes with Windows understands C# 5 and nothing newer. So the code skips string
+interpolation, `=>` members, `out var` and `nameof`. It's a small price for "anyone can build this with what's
+already on their machine".
 
-Since Windows Vista, services run in **session 0 isolation**: they cannot see the user's desktop, mouse,
-clipboard or notification area. A service alone cannot implement this feature. The established pattern,
-used by many system utilities, is a service that supervises a helper in each user session. This provides:
+### 10.3 Why one executable
 
-- automatic start at boot without per-user autostart entries;
-- recovery if the agent crashes or is terminated;
-- support for multiple simultaneous users (Fast User Switching, Remote Desktop).
+Installer, service and tray program are one file. They can never end up with different versions, the release is
+a single download, and the installer can simply copy itself into place.
 
-### 10.5 Low-level mouse hook (`WH_MOUSE_LL`)
+### 10.4 Why a service and a separate tray program
 
-A global low-level hook observes mouse input for all applications without injecting a DLL into them.
-It is also the only practical way to **swallow** the middle-button event over text fields, so applications do
-not receive both a paste and their own middle-click action. Events generated by the agent itself are
-recognized by the `LLMHF_INJECTED` flag and ignored, preventing feedback loops.
+Since Windows Vista, services live in session 0, cut off from the user's desktop. A service can't see your
+mouse, your clipboard or your notification area, so it can't do this job on its own. The usual solution, and
+the one I went with, is a small service that starts and watches a helper in each user session. That gives you
+autostart without per-user startup entries, automatic recovery if the helper dies, and it works with several
+users logged in at once (fast user switching, Remote Desktop).
 
-### 10.6 Text-field detection by I-beam cursor
+### 10.5 Why a low-level mouse hook
 
-Windows offers no universal "is the pointer over editable text?" query. UI Automation can answer it, but it is
-slow, varies between frameworks and can block. The shape of the system cursor is a fast, framework-independent
-signal that virtually every application sets correctly over text. The cursor is read at the moment of the
-button press, so a drag that starts over text is recognized even if it ends elsewhere.
+`WH_MOUSE_LL` sees mouse input for every application without injecting code into any of them. It's also the
+only practical way to swallow the middle-click over a text field, so the application doesn't get both a paste
+and its own middle-click action. The program ignores input it generates itself (the `LLMHF_INJECTED` flag),
+otherwise it would keep reacting to its own clicks.
 
-### 10.7 Copying with a simulated `Ctrl+C`
+### 10.6 How it knows you're over a text field
 
-Reading the selection directly would require application-specific APIs. A simulated `Ctrl+C` works in any
-application that supports copying. The **clipboard sequence number** (`GetClipboardSequenceNumber`) reveals
-whether anything was copied, so the clipboard is never cleared or altered when nothing was selected. `Shift` is
-released before sending `Ctrl+C` (to avoid `Ctrl+Shift+C`, which means something else in browsers and
-terminals), and copying is skipped while `Alt` or `Win` is held.
+Windows has no simple "is the pointer over editable text?" call. UI Automation can tell you, but it's slow,
+differs between frameworks and sometimes blocks. The mouse cursor, on the other hand, turns into an I-beam over
+text in practically every program, and checking it is instant. The cursor is checked when you press the button,
+so a selection that starts on text still counts even if you release the button somewhere else.
 
-### 10.8 Pasting with a click and `Ctrl+V`
+### 10.7 Why it copies by sending `Ctrl+C`
 
-On Linux, middle-click pastes at the pointer, not at the existing caret. A synthetic left click moves the caret
-to the pointer first, then `Ctrl+V` pastes. `SendInput` is used because it places events in the system input
-stream exactly like real hardware input.
+Reading the selection directly would need a different API for every kind of application. Sending `Ctrl+C` works
+everywhere copying works. To tell whether anything was actually copied, the program compares the clipboard
+sequence number (`GetClipboardSequenceNumber`) before and after. If nothing changed, it leaves the clipboard
+alone. It also lets go of `Shift` first, because `Ctrl+Shift+C` means something different in browsers and
+terminals, and it doesn't copy at all while `Alt` or `Win` is held down.
 
-### 10.9 Excluded applications
+### 10.8 Why it clicks before pasting
 
-Terminals interpret `Ctrl+C` as "interrupt the running program", and Windows Terminal has its own
-`copyOnSelect` setting. Remote desktop and virtual machine windows forward input to another operating system,
-which already has its own selection handling. Acting in these windows would be harmful, so they are excluded.
+On Linux, middle-click pastes where the mouse is, not where the text cursor happens to be. So the program first
+sends a left click to move the cursor there, then `Ctrl+V`. Both go through `SendInput`, which Windows treats
+the same as real mouse and keyboard input.
 
-### 10.10 Service permissions (SDDL)
+### 10.9 Why some programs are excluded
 
-By default only administrators can start or stop a service. The installer applies a security descriptor
-that additionally grants *Interactive Users* (`IU`) the start (`RP`) and stop (`WP`) rights for this service only.
-The tray menu can therefore control the service without a UAC prompt, while configuration and deletion
-remain restricted to administrators. If the direct call fails, the agent falls back to an elevated `sc.exe`.
+In a terminal `Ctrl+C` stops the running program, which is the last thing you want after selecting some text.
+Windows Terminal also has its own `copyOnSelect` option. Remote Desktop and virtual machine windows pass input
+to another system that already handles selections its own way. So the program stays out of all of these.
 
-### 10.11 Installation into Program Files
+### 10.10 Why regular users can start and stop the service
 
-The service runs as LocalSystem. If its executable were in a user-writable folder, any user could replace it
-and gain system privileges. `C:\Program Files` is writable only by administrators, which closes that
-privilege-escalation path.
+Normally only administrators can do that. The installer adds a permission entry that lets interactive users
+(`IU`) start (`RP`) and stop (`WP`) this one service, and nothing more. Changing or deleting it still needs
+admin rights. That's what lets the tray menu work without UAC prompts. If it fails anyway, the program falls back
+to `sc.exe` with a UAC prompt.
 
-### 10.12 Built-in installer instead of MSI/WiX/Inno Setup
+### 10.11 Why it goes into Program Files
 
-Installer frameworks are third-party tools or require a separate toolchain. The operations needed here are
-few and well defined, and Windows provides all of them: `sc.exe` for the service, the registry for the
-*Apps* entry, the built-in `WScript.Shell` COM object for shortcuts. Keeping the installer in the same code
-removes an entire build dependency.
+The service runs as LocalSystem. If its file were somewhere users can write to, anyone could swap it out and get
+full control of the machine. Only administrators can write to `C:\Program Files`, which closes that hole.
 
-### 10.13 Registration in Settings > Apps
+### 10.12 Why there's no MSI, WiX or Inno Setup
 
-Windows lists applications from `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`. Writing the
-documented values (`DisplayName`, `DisplayVersion`, `Publisher`, `DisplayIcon`, `UninstallString`,
-`QuietUninstallString`, `EstimatedSize`, `NoModify`, `NoRepair`) makes the app appear with its icon,
-version and size, and lets both users and management tools uninstall it. The 64-bit registry view is used
-explicitly so the entry lands in the correct location regardless of process bitness.
+All of those are either third-party tools or need their own build setup. The installer only has to do a handful
+of things, and Windows can do all of them itself: `sc.exe` for the service, the registry for the *Apps* entry,
+and the built-in `WScript.Shell` object for the shortcuts. Keeping it in the same code means one less thing to
+build.
 
-### 10.14 Self-elevation
+### 10.13 How it shows up in Settings > Apps
 
-The executable is not marked `requireAdministrator`, so the agent runs with normal user rights. When
-installation or uninstallation is requested, it relaunches itself with the `runas` verb. The PID of the
-requesting process is passed along so the elevated process does not terminate it while closing agents.
+Windows builds that list from `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`. The installer writes
+the standard values there (name, version, publisher, icon, size, uninstall commands, and flags that hide the
+Modify and Repair buttons). It always writes to the 64-bit view of the registry, so the entry ends up in the
+right place regardless of how the program was compiled.
 
-### 10.15 Self-deletion on uninstall
+### 10.14 How it gets admin rights only when needed
 
-A running executable cannot delete its own file. After all other steps, the uninstaller starts a hidden
-`cmd.exe` that waits a few seconds (until the uninstaller and its parent have exited), then removes the
-program folder; the removal is attempted twice for robustness.
+The program isn't marked as "always run as administrator", so the tray program runs with normal rights. When
+you install or uninstall, it restarts itself with the `runas` verb, which brings up the UAC prompt. It passes its
+own process ID along, so the elevated copy knows not to close it while shutting down the other instances.
 
-### 10.16 Generated icon
+### 10.15 How the uninstaller deletes itself
 
-Icons are drawn at run time with GDI+ (tray icons in three status colours). During the build, the same code
-writes a multi-resolution `.ico` (16-256 px, PNG-compressed entries), which the compiler embeds in the
-executable. No image files are needed in the repository, and the icon is always consistent with the code.
+A running program can't delete its own file. So once everything else is done, the uninstaller starts a hidden
+`cmd.exe` that waits a few seconds for it to exit and then removes the folder. It tries twice, just in case.
 
-### 10.17 MSI-compatible exit codes
+### 10.16 Why the icon is drawn in code
 
-Deployment tools such as Intune and SCCM interpret Windows Installer codes (`1602`, `1603`). Using them
-lets those tools report success, cancellation and failure correctly without custom configuration.
+The tray icons (green, grey, red) are drawn at runtime with GDI+. When building, the same drawing code writes a
+proper multi-size `.ico` file (16 to 256 pixels), which the compiler embeds into the program. No image files in
+the repository, and the icon can't drift out of sync with the code.
 
-### 10.18 Own double-click detection for the tray icon
+### 10.17 Why the Windows Installer exit codes
 
-The WinForms `NotifyIcon.DoubleClick` event depends on the shell sending a double-click notification to the
-tray icon, which Windows 11 does not always do (for example, for icons in the hidden-icons overflow area).
-The agent therefore counts two left-button releases within the system double-click time
-(`SystemInformation.DoubleClickTime`) itself, which works regardless of how the shell reports the clicks.
+Intune, SCCM and similar tools already know what `1602` and `1603` mean. Using the same codes means they report
+success, cancellation and failure correctly without any extra setup.
+
+### 10.18 Why it detects double-clicks on the icon itself
+
+The usual WinForms `DoubleClick` event only fires if Windows tells the icon about the double-click, and Windows
+11 doesn't always do that (icons hidden behind the arrow in the taskbar are a common case). Since 1.0.1 the
+program just counts two clicks within the system double-click time (`SystemInformation.DoubleClickTime`) on its
+own, which works no matter how Windows reports them.
 
 ---
 
 ## 11. Windows APIs used
 
-| API | Library | Purpose |
+For anyone reading the code, here's what comes from where:
+
+| API | Library | Used for |
 |---|---|---|
-| `SetWindowsHookEx(WH_MOUSE_LL)`, `CallNextHookEx`, `UnhookWindowsHookEx` | user32 | Global mouse hook |
-| `GetCursorInfo`, `LoadCursor(IDC_IBEAM)` | user32 | Text cursor detection |
-| `SendInput` | user32 | Synthetic keyboard and mouse input |
-| `GetClipboardSequenceNumber` | user32 | Detect whether a copy happened |
-| `GetDoubleClickTime`, `GetAsyncKeyState` | user32 | Double-click and modifier detection |
-| `RegisterHotKey`, `PostMessage` | user32 | Global hotkey, cross-thread notification |
-| `GetForegroundWindow`, `GetWindowThreadProcessId` | user32 | Identify the active application |
-| `OpenProcess`, `QueryFullProcessImageName` | kernel32 | Executable name for exclusions |
-| `WTSEnumerateSessions`, `WTSQueryUserToken` | wtsapi32 | Find user sessions and their tokens |
-| `DuplicateTokenEx`, `CreateProcessAsUser` | advapi32 | Start the agent in a user session |
-| `CreateEnvironmentBlock` | userenv | Correct user environment for the agent |
-| `ServiceBase`, `ServiceController` | .NET | Service implementation and control |
-| `sc.exe` | Windows | Service creation, permissions, recovery |
+| `SetWindowsHookEx(WH_MOUSE_LL)`, `CallNextHookEx`, `UnhookWindowsHookEx` | user32 | The global mouse hook |
+| `GetCursorInfo`, `LoadCursor(IDC_IBEAM)` | user32 | Checking for the text cursor |
+| `SendInput` | user32 | Sending clicks and key presses |
+| `GetClipboardSequenceNumber` | user32 | Telling whether a copy happened |
+| `GetDoubleClickTime`, `GetAsyncKeyState` | user32 | Double-clicks and modifier keys |
+| `RegisterHotKey`, `PostMessage` | user32 | `Ctrl+Alt+P` and messages between threads |
+| `GetForegroundWindow`, `GetWindowThreadProcessId` | user32 | Finding the active program |
+| `OpenProcess`, `QueryFullProcessImageName` | kernel32 | Getting its file name for the exclusion list |
+| `WTSEnumerateSessions`, `WTSQueryUserToken` | wtsapi32 | Finding user sessions |
+| `DuplicateTokenEx`, `CreateProcessAsUser` | advapi32 | Starting the tray program in a session |
+| `CreateEnvironmentBlock` | userenv | Giving it the user's environment |
+| `ServiceBase`, `ServiceController` | .NET | Running and controlling the service |
+| `sc.exe` | Windows | Creating the service and setting its permissions |
 | `WScript.Shell` | Windows (COM) | Start menu shortcuts |
 
 ---
 
 ## 12. Files, registry and system changes
 
-Complete list of everything the installer creates. The uninstaller removes all of it.
+This is everything the installer touches. The uninstaller removes all of it.
 
-| Type | Location |
+| What | Where |
 |---|---|
 | Program | `C:\Program Files\LinuxSelection\LinuxSelection.exe` |
 | Log | `C:\ProgramData\LinuxSelection\service.log` |
-| Service | `LinuxSelection` (display name *Linux Selection*) |
+| Service | `LinuxSelection` (shown as *Linux Selection*) |
 | Start menu | `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Linux Selection\` |
 | Apps entry | `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\LinuxSelection` |
-| User settings | `HKCU\Software\LinuxSelection` |
+| Your settings | `HKCU\Software\LinuxSelection` |
 
 ---
 
 ## 13. Security and privacy
 
-- **No network access.** The program never opens a network connection. There is no telemetry, update check
-  or analytics.
-- **Clipboard data stays in memory.** Selected text is kept only in the agent's memory (separate buffer mode)
-  and is never written to disk or logged.
-- **Least privilege.** The tray agent, which handles all user input, runs with the user's normal rights.
-  Only the small supervisor service runs as LocalSystem, and it does not process any user data.
-- **Protected binaries.** The executable used by the service is installed where only administrators can modify it.
-- **Narrow permission change.** Interactive users receive only start/stop rights on this single service.
-- **No DLL injection.** The low-level hook runs in the agent's own process; no code is loaded into other applications.
-- **Auditable.** The entire program is one readable source file that can be compiled with the tools built into Windows.
+A program that watches your mouse and reads your clipboard should be upfront about what it does, so here it is.
 
-To report a security issue, please use GitHub's *Report a vulnerability* feature (private security advisory)
-rather than a public issue.
+It never connects to the network. No telemetry, no update checks, no analytics. Whatever you select stays in the
+tray program's memory (and only in separate mode); it's never written to disk or to the log.
+
+The tray program, which is the part that deals with your input, runs with your normal user rights. Only the small
+service runs as LocalSystem, and all it does is start the tray program; it never sees your data. Its file sits in
+`Program Files`, where only administrators can change it. The one permission the installer adds lets users start
+and stop this single service, nothing else. No code is injected into other programs.
+
+And the whole thing is one source file that you can read and compile yourself with what's already on your
+computer.
+
+If you find a security problem, please report it privately through GitHub's *Report a vulnerability* button
+rather than opening a public issue.
 
 ---
 
 ## 14. Building from source
 
-### 14.1 Prerequisites
+### 14.1 What you need
 
-Windows 10/11 only. No Visual Studio, SDK or NuGet packages are required.
+Just Windows 10 or 11. No Visual Studio, no SDK, no NuGet.
 
-### 14.2 Build commands
+### 14.2 Building
 
-Run in the folder containing `LinuxSelection.cs`:
+Open a command prompt in the folder with `LinuxSelection.cs` and run:
 
 ```cmd
 set CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe
@@ -617,21 +589,21 @@ rem 2. Build the installer with the icon embedded
 del icongen.exe app.ico
 ```
 
-On 32-bit Windows replace `Framework64` with `Framework`.
+On 32-bit Windows, use `Framework` instead of `Framework64`.
 
-### 14.3 Why two compilation steps
+### 14.3 Why it's built twice
 
-The icon is produced by the program's own drawing code (`--make-icon`), so the first build creates a helper
-that writes `app.ico`, and the second build embeds it with `/win32icon`. This keeps binary assets out of the
+The icon is drawn by the program's own code. So the first build makes a throwaway copy whose only job is to
+write `app.ico`, and the second build embeds that icon into the real installer. It keeps image files out of the
 repository.
 
-### 14.4 Verifying a build
+### 14.4 Checking that it works
 
 1. Run `LinuxSelectionSetup.exe` and install.
-2. Check **Services** (`services.msc`): *Linux Selection* is *Running*, start type *Automatic*.
-3. Check the tray icon is green, select text in Notepad, middle-click elsewhere in the document.
-4. Check **Settings > Apps** lists *Linux Selection 1.0.1*.
-5. Uninstall and verify that every location in [section 12](#12-files-registry-and-system-changes) is gone.
+2. In `services.msc`, *Linux Selection* should be *Running* with start type *Automatic*.
+3. The tray icon should be green. Select some text in Notepad and middle-click somewhere else in the document.
+4. *Settings > Apps* should list *Linux Selection 1.0.1*.
+5. Uninstall, then check that nothing from [section 12](#12-files-registry-and-system-changes) is left.
 
 ---
 
@@ -639,141 +611,129 @@ repository.
 
 ```
 linux-selection/
-├── LinuxSelection.cs        Complete source code
+├── LinuxSelection.cs        the whole program
 ├── LICENSE                  Apache License 2.0
-├── NOTICE                   Attribution notice (required in redistributions)
-└── README.md                Documentation
+├── NOTICE                   attribution that must be kept when redistributing
+└── README.md                this file
 ```
 
-The compiled installer `LinuxSelectionSetup.exe` is not stored in the repository. It is published as an
-asset of each [GitHub release](../../releases), so the repository contains only source and documentation
-and every binary is tied to a tagged version.
+The installer itself isn't kept in the repository. Each version's `LinuxSelectionSetup.exe` is attached to its
+[release](../../releases) instead, so every download matches a tagged version of the source.
 
-`LinuxSelection.cs` is organized into classes with single responsibilities:
+Inside `LinuxSelection.cs` the code is split into classes, each with one job:
 
-| Class | Responsibility |
+| Class | Job |
 |---|---|
-| `Program` | Entry point, command-line dispatch, constants, logging |
-| `LauncherService` | Windows service: supervises agents in user sessions |
-| `Svc` | Service status queries and start/stop |
-| `Setup` | Interactive installer, install, uninstall, Start menu, *Apps* entry |
-| `Logo` | Icon drawing and `.ico` generation |
-| `TrayAgent` | Mouse hook, copy/paste logic, clipboard, tray menu, settings |
-| `MessageWindow` | Hidden window for the hotkey and cross-thread notifications |
-| `Wts` | Session enumeration and launching processes in user sessions |
-| `Native` | Win32 P/Invoke declarations |
+| `Program` | Entry point, command-line handling, constants, logging |
+| `LauncherService` | The Windows service that keeps tray programs running |
+| `Svc` | Checking, starting and stopping the service |
+| `Setup` | Installer, uninstaller, Start menu, *Apps* entry |
+| `Logo` | Drawing the icon and writing the `.ico` file |
+| `TrayAgent` | Mouse hook, copy and paste, tray icon and menu, settings |
+| `MessageWindow` | Hidden window for the hotkey and messages between threads |
+| `Wts` | Finding sessions and starting the tray program in them |
+| `Native` | Win32 declarations |
 
 ---
 
 ## 16. Version history
 
-The project follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
+Version numbers follow [Semantic Versioning](https://semver.org/).
 
-| Version | Date | Changes |
-|---|---|---|
-| **1.0.1** | 2026-10-12 | **Fixed:** double-clicking the tray icon did not toggle *Enabled* on some Windows 11 systems. The double-click is now detected by the application itself instead of relying on the shell's double-click notification. |
-| 1.0.0 | 2026-10-12 | First public release: select-to-copy, middle-click paste, separate selection buffer, Windows service, tray menu, `Ctrl+Alt+P` hotkey, installer with silent mode, Start menu shortcuts and uninstall from *Settings > Apps*. |
+**1.0.1** (2026-10-12)
+Double-clicking the tray icon didn't switch *Enabled* on some Windows 11 machines. The program now detects the
+double-click itself instead of relying on Windows to report it.
 
-Full release notes and installers for every version are available on the [Releases](../../releases) page.
+**1.0.0** (2026-10-12)
+First release: copy on select, middle-click paste, separate selection buffer, Windows service, tray menu,
+`Ctrl+Alt+P`, installer with silent mode, Start menu shortcuts and uninstall from *Settings > Apps*.
+
+Release notes and installers for every version are on the [Releases](../../releases) page.
 
 ---
 
 ## 17. Troubleshooting
 
-| Symptom | Cause and solution |
+| Problem | What to do |
 |---|---|
-| No tray icon after installation | Wait 5 seconds. Check that the service is running in `services.msc`. Check the log. |
-| Icon is red | The service is stopped. Use **Start service** in the tray menu. |
-| Icon is grey | The feature is disabled. Press `Ctrl+Alt+P` or check **Enabled**. |
-| Does not work in one application | The application may run as administrator, be excluded, or not use the I-beam cursor. See [Known limitations](#19-known-limitations). |
-| Middle-click opens links instead of pasting | Expected: pasting happens only over text fields. |
-| Clipboard content replaced unexpectedly | Enable **Separate selection buffer (Linux style)**. |
-| `Ctrl+Alt+P` does nothing | Another application has registered the same hotkey. Use the tray menu. |
-| Double-clicking the tray icon does nothing | Fixed in version 1.0.1. Install the latest release. |
-| Installer reports error 1603 | See `C:\ProgramData\LinuxSelection\service.log` for the reason. |
-| Start menu shortcuts missing | `WScript.Shell` may be blocked by policy; the log contains the reason. The program works without them. |
+| No tray icon after installing | Give it a few seconds. Then check in `services.msc` that the service is running, and look at the log. |
+| The icon is red | The service is stopped. Choose **Start service** in the menu. |
+| The icon is grey | It's switched off. Press `Ctrl+Alt+P` or tick **Enabled**. |
+| It doesn't work in one particular program | That program may be running as administrator, be on the exclusion list, or not use the standard text cursor. See [section 19](#19-known-limitations). |
+| Middle-click opens links instead of pasting | That's intended. Pasting only happens over text fields. |
+| My clipboard keeps getting replaced | Turn on **Separate selection buffer (Linux style)**. |
+| `Ctrl+Alt+P` does nothing | Some other program has grabbed the same shortcut. Use the menu instead. |
+| Double-clicking the icon does nothing | Fixed in 1.0.1. Install the latest release. |
+| The installer says 1603 | The log explains why. |
+| No Start menu shortcuts | Your organisation may block `WScript.Shell`. The log will say so. Everything else still works. |
 
-The log file records service start/stop, agent launches, installation results and errors:
-
-```
-C:\ProgramData\LinuxSelection\service.log
-```
+The log lives in `C:\ProgramData\LinuxSelection\service.log`. It records when the service starts and stops,
+when the tray program is launched, installation results and errors.
 
 ---
 
 ## 18. FAQ
 
-**Does it work with keyboard selection (Shift + arrows)?**
-No. Like on Linux, only mouse selections fill the selection buffer.
+**Does selecting with the keyboard (Shift + arrows) work too?**
+No, only mouse selections. That's how it works on Linux as well.
 
-**Does it slow down the computer?**
-No. The hook does constant-time work per mouse event; actions run only after a selection or a middle-click.
+**Will it slow my computer down?**
+No. The hook does a tiny amount of work per mouse event. Anything heavier only happens after you select
+something or middle-click.
 
-**Does it work for multiple users at once?**
-Yes. The service starts a separate agent in every active session, each with its own settings.
+**What if several people are logged in?**
+Each of them gets their own tray program with their own settings.
 
 **Can I use it without the service?**
-The service provides autostart and supervision. If it is stopped, the agent stays in the tray but is inactive.
+The service is what starts the program at boot and keeps it alive. If you stop it, the icon stays (red) but
+copy and paste are paused until you start it again.
 
-**Why is the antivirus/SmartScreen suspicious?**
-The installer is unsigned and uses a global mouse hook and synthetic input, which are also used by
-automation tools. The full source is available for review and can be compiled locally.
+**Why is my antivirus or SmartScreen suspicious?**
+The installer isn't signed, and it uses a global mouse hook and simulated input, the same techniques
+automation tools use. The full source is here, so you can read it and build it yourself.
 
 ---
 
 ## 19. Known limitations
 
-- **Elevated windows.** Windows User Interface Privilege Isolation (UIPI) prevents a normal process from
-  sending input to applications started with *Run as administrator*.
-- **Non-standard cursors.** Applications that draw their own text cursor (some Electron, Java and game UIs)
-  are not detected.
-- **Single clipboard.** In shared mode the selection replaces the clipboard, as Windows has only one.
-  Separate mode emulates a second buffer by restoring the clipboard after each operation; clipboard history
-  tools may still record the intermediate content.
-- **Applications without `Ctrl+C`.** Programs that do not implement the standard copy shortcut cannot be read.
-- **Secure desktop.** UAC prompts and the sign-in screen are isolated by design.
+- Windows won't let a normal program send input to programs started with *Run as administrator* (this is
+  called UIPI), so it doesn't work in those windows.
+- Programs that draw their own text cursor instead of using the standard one (some Electron and Java apps,
+  games) aren't recognised.
+- Windows has only one clipboard. In the default mode your selection replaces it. Separate mode works around
+  this by putting the clipboard back after each copy and paste, but clipboard history tools may still catch the
+  selection in between.
+- Programs that don't support `Ctrl+C` can't be copied from.
+- The UAC prompt and the sign-in screen are deliberately isolated by Windows, so it doesn't work there.
 
 ---
 
 ## 20. Contributing
 
-Issues and pull requests are welcome. Please keep the project's principles:
+Bug reports and pull requests are welcome. A few things I'd like to keep as they are:
 
-- **No dependencies.** The code must compile with the `csc.exe` built into Windows.
-- **C# 5 syntax only** (see [section 10.2](#102-c-5-language-level)).
-- **English only** in code, comments, user interface and documentation.
-- **Single source file** unless there is a strong reason to split it.
-- Describe how the change was tested (section 14.4).
+- no dependencies, so it still builds with the `csc.exe` that comes with Windows;
+- C# 5 syntax only (see [section 10.2](#102-why-c-5-syntax));
+- English everywhere: code, comments, interface and documentation;
+- one source file, unless there's a really good reason to split it.
+
+When you send a change, please mention how you tested it ([section 14.4](#144-checking-that-it-works) is a
+good starting point).
 
 ---
 
 ## 21. License
 
-Copyright 2026 Aleksandr Igumenov.
-Licensed under the [Apache License, Version 2.0](LICENSE).
+Copyright 2026 Aleksandr Igumenov. Licensed under the [Apache License 2.0](LICENSE).
 
-**Original idea and author: Aleksandr Igumenov.**
+You're free to use this program for anything, personal or commercial, to change it and to share it, as is or
+modified. I only ask one thing in return: credit me as the author of the original idea. If you pass it on,
+keep the text from the [NOTICE](NOTICE) file somewhere visible, whether that's a NOTICE file of your own, your
+documentation or an "About" screen. Include the [LICENSE](LICENSE) file as well, don't remove the copyright
+notices from the code, and mark the files you changed.
 
-### What you may do
+As with any open-source software, it comes without warranty.
 
-- **Use** the software freely, for personal, educational or commercial purposes.
-- **Modify** it and create derivative works.
-- **Distribute** original or modified versions, in source or compiled form.
-
-### What you must do when distributing
-
-- **Credit the author.** Keep the attribution from the [NOTICE](NOTICE) file, naming
-  Aleksandr Igumenov as the author of the original idea, in your distribution: in a `NOTICE` file,
-  in the documentation, or in an "About" screen of your application.
-- **Include the license.** Provide a copy of the [LICENSE](LICENSE) file.
-- **Keep existing notices.** Do not remove copyright and attribution notices from the source code.
-- **Mark your changes.** Modified files must state that they were changed.
-
-The software is provided "as is", without warranties of any kind.
-
-### Why Apache 2.0
-
-The Apache License 2.0 is a widely used, OSI-approved permissive license. Unlike the MIT License, it
-contains an explicit, enforceable attribution mechanism (the `NOTICE` file, Section 4(d)), which makes
-crediting the original author a formal condition of redistribution while keeping the software free to use,
-modify and share. It also grants an explicit patent license to users.
+I chose Apache 2.0 rather than MIT because it has a proper, legally recognised way of requiring attribution
+(the NOTICE file, section 4(d) of the license), while still leaving the software free to use, modify and share.
+It also includes an explicit patent grant, which MIT doesn't.

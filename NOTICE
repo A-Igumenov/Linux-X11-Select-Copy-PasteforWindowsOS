@@ -1,0 +1,12 @@
+Linux Selection
+The X11 select-copy-paste workflow for Windows.
+
+Original idea, design and implementation: Aleksandr Igumenov
+Copyright 2026 Aleksandr Igumenov
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Any redistribution of this software or of works derived from it must keep
+this attribution, crediting Aleksandr Igumenov as the author of the original
+idea, in a NOTICE file, in the documentation, or in an "About" screen of the
+derived work, as required by Section 4(d) of the Apache License 2.0.

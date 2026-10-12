@@ -17,8 +17,8 @@ can be removed from **Settings > Apps**.
 | **Runtime** | .NET Framework 4.8 (built into Windows) |
 | **Dependencies** | None |
 | **Network access** | None |
-| **Author** | Aleksandr Igumenov |
-| **License** | [MIT](LICENSE) |
+| **Author** | Aleksandr Igumenov (original idea and implementation) |
+| **License** | [Apache 2.0](LICENSE), attribution required ([NOTICE](NOTICE)) |
 
 ---
 
@@ -640,7 +640,8 @@ repository.
 ```
 linux-selection/
 ├── LinuxSelection.cs        Complete source code
-├── LICENSE                  MIT License
+├── LICENSE                  Apache License 2.0
+├── NOTICE                   Attribution notice (required in redistributions)
 └── README.md                Documentation
 ```
 
@@ -748,7 +749,31 @@ Issues and pull requests are welcome. Please keep the project's principles:
 
 ## 21. License
 
-Released under the [MIT License](LICENSE). Copyright © 2026 Aleksandr Igumenov.
+Copyright 2026 Aleksandr Igumenov.
+Licensed under the [Apache License, Version 2.0](LICENSE).
 
-You may use, copy, modify and distribute the software, including commercially, provided the copyright
-notice and the license text are included. The software is provided "as is", without warranty of any kind.
+**Original idea and author: Aleksandr Igumenov.**
+
+### What you may do
+
+- **Use** the software freely, for personal, educational or commercial purposes.
+- **Modify** it and create derivative works.
+- **Distribute** original or modified versions, in source or compiled form.
+
+### What you must do when distributing
+
+- **Credit the author.** Keep the attribution from the [NOTICE](NOTICE) file, naming
+  Aleksandr Igumenov as the author of the original idea, in your distribution: in a `NOTICE` file,
+  in the documentation, or in an "About" screen of your application.
+- **Include the license.** Provide a copy of the [LICENSE](LICENSE) file.
+- **Keep existing notices.** Do not remove copyright and attribution notices from the source code.
+- **Mark your changes.** Modified files must state that they were changed.
+
+The software is provided "as is", without warranties of any kind.
+
+### Why Apache 2.0
+
+The Apache License 2.0 is a widely used, OSI-approved permissive license. Unlike the MIT License, it
+contains an explicit, enforceable attribution mechanism (the `NOTICE` file, Section 4(d)), which makes
+crediting the original author a formal condition of redistribution while keeping the software free to use,
+modify and share. It also grants an explicit patent license to users.

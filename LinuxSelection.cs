@@ -9,6 +9,8 @@
 //  One .exe, several modes:
 //    LinuxSelectionSetup.exe                  - installer (double-click)
 //    LinuxSelectionSetup.exe --install /quiet - silent install (for automation)
+//    LinuxSelectionSetup.exe --portable       - portable: just the tray agent, from any folder
+//                                               (nothing installed, no service, no admin rights)
 //    ...\Program Files\LinuxSelection\LinuxSelection.exe
 //        (no arguments)         - tray agent (mouse, clipboard, menu)
 //        --uninstall [/quiet]   - uninstall (called by Settings > Apps)
@@ -70,8 +72,11 @@ static class Program
         if (mode == "--uninstall") return Setup.Uninstall(quiet, confirm, parentPid);
         if (mode == "--make-icon" && args.Length > 1) { Logo.WriteIco(args[1]); return 0; }
 
+        // Portable mode: just the tray agent, from any folder, without the service or admin rights
+        bool portable = mode == "--portable";
+
         // Not started from the install folder (e.g. a downloaded LinuxSelectionSetup.exe) - act as installer
-        if (!Setup.RunningFromInstallDir) return Setup.Interactive();
+        if (!portable && !Setup.RunningFromInstallDir) return Setup.Interactive();
 
         bool created;
         using (var mtx = new Mutex(true, @"Local\LinuxSelection_Agent", out created))
@@ -84,7 +89,7 @@ static class Program
                 return 0;
             }
             Application.EnableVisualStyles();
-            Application.Run(new TrayAgent());
+            Application.Run(new TrayAgent(portable));
         }
         return 0;
     }
@@ -616,6 +621,7 @@ class TrayAgent : ApplicationContext
 
     bool enabled = true;            // "Enabled" menu checkbox
     bool separate = false;          // true = separate selection buffer (true Linux style)
+    readonly bool portable;         // --portable: no service, always standalone
     int svcState = Svc.NotInstalled;
     volatile bool active;           // enabled && service running (or not installed - standalone mode)
     bool opBusy;                    // service start/stop in progress
@@ -639,8 +645,9 @@ class TrayAgent : ApplicationContext
     readonly ToolStripMenuItem miStatus, miEnabled, miSeparate, miStart, miStop, miInstall, miExit;
     readonly MessageWindow msgWindow;
 
-    public TrayAgent()
+    public TrayAgent(bool portable)
     {
+        this.portable = portable;
         ibeamCursor = Native.LoadCursor(IntPtr.Zero, 32513); // IDC_IBEAM
         LoadSettings();
 
@@ -678,10 +685,13 @@ class TrayAgent : ApplicationContext
         menu.Items.Add(miEnabled);
         menu.Items.Add(miSeparate);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(miStart);
-        menu.Items.Add(miStop);
-        menu.Items.Add(miInstall);
-        menu.Items.Add(new ToolStripSeparator());
+        if (!portable)   // no service to start, stop or install in portable mode
+        {
+            menu.Items.Add(miStart);
+            menu.Items.Add(miStop);
+            menu.Items.Add(miInstall);
+            menu.Items.Add(new ToolStripSeparator());
+        }
         menu.Items.Add(miExit);
         menu.Opening += (s, e) => RefreshState();
 
@@ -721,7 +731,7 @@ class TrayAgent : ApplicationContext
         {
             startup.Stop();
             startup.Dispose();
-            if (Svc.State() == Svc.Stopped) ChangeService(true);
+            if (QueryService() == Svc.Stopped) ChangeService(true);
         };
         startup.Start();
 
@@ -737,9 +747,12 @@ class TrayAgent : ApplicationContext
     }
 
     // ----------------------------- State and menu -----------------------------
+    // Portable mode never touches the service and runs standalone, as if none were installed
+    int QueryService() { return portable ? Svc.NotInstalled : Svc.State(); }
+
     void RefreshState()
     {
-        if (!opBusy) svcState = Svc.State();
+        if (!opBusy) svcState = QueryService();
         bool svcOk = svcState == Svc.Running || svcState == Svc.NotInstalled;
         active = enabled && svcOk;
 
@@ -748,7 +761,7 @@ class TrayAgent : ApplicationContext
                   : svcState == Svc.Pending ? "changing state..."
                   : "not installed (standalone mode)";
         if (opBusy) st = "changing state...";
-        miStatus.Text = "Service: " + st;
+        miStatus.Text = portable ? "Portable mode" : "Service: " + st;
 
         miEnabled.Checked = enabled;
         miSeparate.Checked = separate;
@@ -795,7 +808,7 @@ class TrayAgent : ApplicationContext
     void StopAndExit()
     {
         if (opBusy) return;
-        int s = Svc.State();
+        int s = QueryService();
         if (s == Svc.NotInstalled || s == Svc.Stopped) { ExitThread(); return; }
 
         opBusy = true;

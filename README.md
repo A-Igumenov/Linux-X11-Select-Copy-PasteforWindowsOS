@@ -94,6 +94,7 @@ Windows 10.
 - Runs as a Windows service, starts at boot and keeps itself running for every logged-in user.
 - Tray icon with a menu, and `Ctrl+Alt+P` to switch it on and off.
 - Its own installer, with a silent mode, Start menu shortcuts and a normal entry in *Settings > Apps*.
+- A portable mode, for when you can't or don't want to install it: no service and no admin rights needed.
 
 ---
 
@@ -101,7 +102,8 @@ Windows 10.
 
 Windows 10 or 11 (Server with Desktop Experience works too). .NET Framework 4.8 is part of all of these, so
 there's nothing to install. You'll need administrator rights to install and uninstall, but not for everyday
-use. And, of course, a mouse with a middle button or a clickable wheel.
+use, and not at all in portable mode (see [section 4.5](#45-portable-mode)). And, of course, a mouse with a
+middle button or a clickable wheel.
 
 ---
 
@@ -147,6 +149,24 @@ LinuxSelectionSetup.exe --install /quiet
 Just run the newer installer. It notices the existing installation, tells you which version you have and
 replaces it. Your settings stay as they were.
 
+### 4.5 Portable mode
+
+If you can't install software on your PC, or just don't want to, start the same file with `--portable`:
+
+```cmd
+LinuxSelectionSetup.exe --portable
+```
+
+It runs from any folder, as a regular user, with no UAC prompt, and copy and paste work exactly as in the
+installed version. Nothing gets installed: no service, no Program Files folder, no Start menu shortcuts and no
+*Apps* entry. The only thing it saves is your settings, in `HKCU\Software\LinuxSelection` as usual. You can
+rename the file, to `LinuxSelection.exe` for example; only the switch matters.
+
+What you give up is what the service does: nothing starts the program when you sign in, and nothing restarts
+it if it crashes. To start it automatically, put a shortcut to it with `--portable` on the end in your Startup
+folder (`Win+R`, then `shell:startup`). To stop it, choose **Exit** in the tray menu. To get rid of it, delete
+the file and, if you like, the `HKCU\Software\LinuxSelection` key.
+
 ---
 
 ## 5. Usage
@@ -172,6 +192,9 @@ Double-click the icon to switch it on or off. Right-click for the menu:
 | Start service / Stop service | Starts or stops the Windows service. The icon stays, so you can start it again. |
 | Install as service... | Only appears if the service isn't installed. |
 | Stop and exit | Stops the service and closes the icon. |
+
+In portable mode there are no service items: the first line says *Portable mode*, and **Exit** just closes the
+program.
 
 ### 5.3 Start menu
 
@@ -228,6 +251,7 @@ The installer, the service and the tray program are all the same file, started w
 | `LinuxSelection.exe` | Runs the tray program (when started from the install folder). |
 | `--install [/quiet]` | Installs or upgrades. Asks for admin rights if needed. |
 | `--uninstall [/quiet] [/confirm]` | Uninstalls. `/confirm` asks first; the Start menu shortcut uses it. |
+| `--portable` | Runs just the tray program, from any folder, with no installation and no admin rights. See [section 4.5](#45-portable-mode). |
 | `--service` | Used by Windows to start the service. Don't run it yourself. |
 | `--make-icon <file.ico>` | Writes the program icon. Only needed when building. |
 | `--parent <pid>` | Internal, used when the program restarts itself with admin rights. |
@@ -543,6 +567,8 @@ This is everything the installer touches. The uninstaller removes all of it.
 | Apps entry | `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\LinuxSelection` |
 | Your settings | `HKCU\Software\LinuxSelection` |
 
+In portable mode ([section 4.5](#45-portable-mode)) only the last row applies.
+
 ---
 
 ## 13. Security and privacy
@@ -604,6 +630,8 @@ repository.
 3. The tray icon should be green. Select some text in Notepad and middle-click somewhere else in the document.
 4. *Settings > Apps* should list *Linux Selection 1.0.1*.
 5. Uninstall, then check that nothing from [section 12](#12-files-registry-and-system-changes) is left.
+6. As a regular user, run `LinuxSelectionSetup.exe --portable` from any folder. The icon should appear without a
+   UAC prompt, the menu should say *Portable mode*, and step 3 should work the same way.
 
 ---
 
@@ -685,8 +713,9 @@ something or middle-click.
 Each of them gets their own tray program with their own settings.
 
 **Can I use it without the service?**
-The service is what starts the program at boot and keeps it alive. If you stop it, the icon stays (red) but
-copy and paste are paused until you start it again.
+Yes, in portable mode ([section 4.5](#45-portable-mode)): it runs without the service, without being installed
+and without admin rights. In the installed version, the service is what starts the program at boot and keeps it
+alive. If you stop it there, the icon stays (red) but copy and paste are paused until you start it again.
 
 **Why is my antivirus or SmartScreen suspicious?**
 The installer isn't signed, and it uses a global mouse hook and simulated input, the same techniques
